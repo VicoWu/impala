@@ -143,7 +143,8 @@ public class ColumnStats {
     stats.maxSize_ = slotStats.getMaxSize();
     stats.numTrues_ = slotStats.getNumTrues();
     stats.numFalses_ = slotStats.getNumFalses();
-    LOG.info("get numTrues and numFalses from expre " + slotStats.getNumTrues() + " , " + slotStats.getNumFalses());
+    LOG.info("get numTrues and numFalses from expre " + slotStats.getNumTrues() + " , "
+        + slotStats.getNumFalses());
     return stats;
   }
 
@@ -165,12 +166,12 @@ public class ColumnStats {
     } else {
       numNulls_ += other.numNulls_;
     }
-    if(numTrues_ == -1 || other.numTrues_ == -1) {
+    if (numTrues_ == -1 || other.numTrues_ == -1) {
       numTrues_ = -1;
     } else {
       numTrues_ += other.numTrues_;
     }
-    if(numFalses_ == -1 || other.numFalses_ == -1) {
+    if (numFalses_ == -1 || other.numFalses_ == -1) {
       numFalses_ = -1;
     } else {
       numFalses_ += other.numFalses_;
@@ -188,8 +189,8 @@ public class ColumnStats {
   public long getMaxSize() { return maxSize_; }
   public boolean hasNulls() { return numNulls_ > 0; }
   public long getNumNulls() { return numNulls_; }
-  public long getNumTrues() { return numTrues_;}
-  public long getNumFalses() { return numFalses_;}
+  public long getNumTrues() { return numTrues_; }
+  public long getNumFalses() { return numFalses_; }
   public boolean hasAvgSize() { return avgSize_ >= 0; }
   public boolean hasAvgSerializedSize() { return avgSerializedSize_ >= 0; }
   public boolean hasNumDistinctValues() { return numDistinctValues_ >= 0; }
@@ -217,7 +218,8 @@ public class ColumnStats {
           numDistinctValues_ = (numNulls_ > 0) ? 3 : 2;
           numTrues_ = boolStats.getNumTrues();
           numFalses_ = boolStats.getNumFalses();
-          LOG.info("Updating boolean stats with true compatible and numTrues" + numTrues_ + " AND numFalses " + numFalses_);
+          LOG.info("Updating boolean stats with true compatible and numTrues" + numTrues_
+              + " AND numFalses " + numFalses_);
         }
         break;
       case TINYINT:
@@ -297,8 +299,10 @@ public class ColumnStats {
     long numNulls = colStats.getNum_nulls();
     switch(colType.getPrimitiveType()) {
       case BOOLEAN:
-        LOG.info("createHiveColStatsData with numTrues " + colStats.getNum_trues() + " and numFalses " + colStats.getNum_falses());
-        colStatsData.setBooleanStats(new BooleanColumnStatsData(colStats.getNum_trues(), colStats.getNum_falses(), numNulls));
+        LOG.info("createHiveColStatsData with numTrues " + colStats.getNum_trues()
+            + " and numFalses " + colStats.getNum_falses());
+        colStatsData.setBooleanStats(new BooleanColumnStatsData(
+            colStats.getNum_trues(), colStats.getNum_falses(), numNulls));
         break;
       case TINYINT:
         ndv = Math.min(ndv, LongMath.pow(2, Byte.SIZE));
@@ -374,11 +378,11 @@ public class ColumnStats {
         break;
       }
       case NUM_TRUES: {
-        numTrues_ = (Long)value;
+        numTrues_ = (Long) value;
         break;
       }
       case NUM_FALSES: {
-        numFalses_ = (Long)value;
+        numFalses_ = (Long) value;
         break;
       }
       default: Preconditions.checkState(false);
@@ -401,7 +405,7 @@ public class ColumnStats {
         colType.getPrimitiveType() == PrimitiveType.BINARY) {
       avgSerializedSize_ = colType.getSlotSize() + avgSize_;
     }
-    if(colType.getPrimitiveType() == PrimitiveType.BOOLEAN) {
+    if (colType.getPrimitiveType() == PrimitiveType.BOOLEAN) {
       numTrues_ = stats.getNum_trues();
       numFalses_ = stats.getNum_falses();
     }

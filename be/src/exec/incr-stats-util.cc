@@ -144,12 +144,18 @@ struct PerColumnStats {
   double avg_width;
 
   PerColumnStats()
-      : intermediate_ndv(AggregateFunctions::HLL_LEN, 0), num_nulls(-1),
-        max_width(0), num_rows(0), num_trues(0), num_falses(0), avg_width(0){ }
+    : intermediate_ndv(AggregateFunctions::HLL_LEN, 0),
+      num_nulls(-1),
+      max_width(0),
+      num_rows(0),
+      num_trues(0),
+      num_falses(0),
+      avg_width(0) {}
 
   // Updates all aggregate statistics with a new set of measurements.
   void Update(const string& ndv, int64_t num_new_rows, double new_avg_width,
-      int32_t max_new_width, int64_t num_new_nulls, int64_t num_new_trues, int64_t num_new_falses) {
+      int32_t max_new_width, int64_t num_new_nulls, int64_t num_new_trues,
+      int64_t num_new_falses) {
     DCHECK_EQ(intermediate_ndv.size(), ndv.size()) << "Incompatible intermediate NDVs";
     DCHECK_GE(num_new_rows, 0);
     DCHECK_GE(max_new_width, 0);
@@ -190,8 +196,8 @@ struct PerColumnStats {
 
   // Returns a string with debug information for this
   string DebugString() const {
-    return Substitute(
-        "ndv: $0, num_nulls: $1, max_width: $2, avg_width: $3, num_rows: $4, num_trues: $5, num_falses: $6",
+    return Substitute("ndv: $0, num_nulls: $1, max_width: $2, avg_width: $3, num_rows: "
+                      "$4, num_trues: $5, num_falses: $6",
         ndv_estimate, num_nulls, max_width, avg_width, num_rows, num_trues, num_falses);
   }
 };
@@ -204,7 +210,8 @@ void FinalizePartitionedColumnStats(const TTableSchema& col_stats_schema,
     int32_t num_partition_cols, TAlterTableUpdateStatsParams* params) {
   // The rowset should have the following schema: for every column in the source table,
   // seven columns are produced, one row per partition.
-  // <ndv buckets>, <num nulls>, <max width>, <avg width>, <count rows>, <num trues>, <num falses>
+  // <ndv buckets>, <num nulls>, <max width>, <avg width>, <count rows>, <num trues>, <num
+  // falses>
   static const int COLUMNS_PER_STAT = 7;
 
   const int num_cols =
@@ -216,7 +223,8 @@ void FinalizePartitionedColumnStats(const TTableSchema& col_stats_schema,
   if (rowset.rows.size() > 0) {
     DCHECK_GE(rowset.rows[0].colVals.size(), COLUMNS_PER_STAT);
     params->__isset.partition_stats = true;
-    for (const TRow& col_stats_row: rowset.rows) { //这里一行就是一个一个partition作为group key的一条统计信息
+    for (const TRow& col_stats_row :
+        rowset.rows) { //这里一行就是一个一个partition作为group key的一条统计信息
       // The last few columns are partition columns that the results are grouped by, and
       // so uniquely identify the partition that these stats belong to.
       vector<string> partition_key_vals;
@@ -241,16 +249,11 @@ void FinalizePartitionedColumnStats(const TTableSchema& col_stats_schema,
         int64_t num_trues = col_stats_row.colVals[i + 5].i64Val.value;
         int64_t num_falses = col_stats_row.colVals[i + 6].i64Val.value;
 
-        VLOG(1) << "update statistics value is "
-        << col_stats_schema.columns[i].columnName << ","
-        << ndv << ","
-        << num_rows <<  "，"
-        << avg_width << ","
-        << num_trues << ","
-        << max_width << ","
-        << num_nulls << ","
-        << num_falses;
-        stat->Update(ndv, num_rows, avg_width, max_width, num_nulls, num_trues, num_falses);
+        VLOG(1) << "update statistics value is " << col_stats_schema.columns[i].columnName
+                << "," << ndv << "," << num_rows << "，" << avg_width << "," << num_trues
+                << "," << max_width << "," << num_nulls << "," << num_falses;
+        stat->Update(
+            ndv, num_rows, avg_width, max_width, num_nulls, num_trues, num_falses);
 
         // Save the intermediate state per-column, per-partition
         TIntermediateColumnStats int_stats;
@@ -285,7 +288,8 @@ void FinalizePartitionedColumnStats(const TTableSchema& col_stats_schema,
   empty_column_stats.__set_num_trues(0);
   empty_column_stats.__set_num_falses(0);
   TPartitionStats empty_part_stats;
-  for (int i = 0; i < num_cols * COLUMNS_PER_STAT; i += COLUMNS_PER_STAT) { //初始化每一个原始数据的column的统计信息
+  for (int i = 0; i < num_cols * COLUMNS_PER_STAT;
+       i += COLUMNS_PER_STAT) { //初始化每一个原始数据的column的统计信息
     empty_part_stats.intermediate_col_stats[col_stats_schema.columns[i].columnName] =
         empty_column_stats; //初始化这个column的统计信息
   }
@@ -295,16 +299,20 @@ void FinalizePartitionedColumnStats(const TTableSchema& col_stats_schema,
   empty_part_stats.stats = empty_table_stats;
   for (const vector<string>& part_key_vals: expected_partitions) {
     DCHECK_EQ(part_key_vals.size(), num_partition_cols);
-    if (seen_partitions.find(part_key_vals) != seen_partitions.end()) continue; //如果seen_partitions中包含这个partition，则跳过
-    params->partition_stats[part_key_vals] = empty_part_stats; //否则，初始化这个partition的统计信息
+    if (seen_partitions.find(part_key_vals) != seen_partitions.end())
+      continue; //如果seen_partitions中包含这个partition，则跳过
+    params->partition_stats[part_key_vals] =
+        empty_part_stats; //否则，初始化这个partition的统计信息
   }
 
   // Now aggregate the existing statistics. The FE will ensure that the set of
   // partitions accessed by the query and this list are disjoint and cover the entire
   // set of partitions.
-  for (const TPartitionStats& existing_stats: existing_part_stats) { //对于每一个partition的统计信息
+  for (const TPartitionStats& existing_stats :
+      existing_part_stats) { //对于每一个partition的统计信息
     DCHECK_LE(existing_stats.intermediate_col_stats.size(),
-        col_stats_schema.columns.size()); //必须确保已经存在的统计信息的schema和当前的统计信息的schema是一致的
+        col_stats_schema.columns
+            .size()); //必须确保已经存在的统计信息的schema和当前的统计信息的schema是一致的
     for (int i = 0; i < num_cols; ++i) { //对于每一列
       const string& col_name = col_stats_schema.columns[i * COLUMNS_PER_STAT].columnName;
       map<string, TIntermediateColumnStats>::const_iterator it =
@@ -315,29 +323,28 @@ void FinalizePartitionedColumnStats(const TTableSchema& col_stats_schema,
         continue;
       }
 
-
-      const TIntermediateColumnStats& int_stats = it->second; //取出这个列的已经存在的统计信息
-      VLOG(1) << "update intermediate value for column  "
-                << col_name << ","
-                << int_stats.intermediate_ndv << ","
-                << int_stats.num_rows <<  "，"
-                << int_stats.avg_width << ","
-                << int_stats.max_width << ","
-                << int_stats.num_nulls << ","
-                << int_stats.num_trues << ","
-                << int_stats.num_falses;
+      const TIntermediateColumnStats& int_stats =
+          it->second; //取出这个列的已经存在的统计信息
+      VLOG(1) << "update intermediate value for column  " << col_name << ","
+              << int_stats.intermediate_ndv << "," << int_stats.num_rows << "，"
+              << int_stats.avg_width << "," << int_stats.max_width << ","
+              << int_stats.num_nulls << "," << int_stats.num_trues << ","
+              << int_stats.num_falses;
       stats[i].Update(DecodeNdv(int_stats.intermediate_ndv, int_stats.is_ndv_encoded),
           int_stats.num_rows, int_stats.avg_width, int_stats.max_width,
-          int_stats.num_nulls, int_stats.num_trues, int_stats.num_falses); //将已经存在的统计信息更新到stats中
+          int_stats.num_nulls, int_stats.num_trues,
+          int_stats.num_falses); //将已经存在的统计信息更新到stats中
     }
   }
 
   // Compute the final results now that all aggregations are done, and save those as
   // column stats for each column in turn.
-  for (int i = 0; i < stats.size(); ++i) { //stats里面的每一项信息是一个column的所有统计信息
+  for (int i = 0; i < stats.size();
+       ++i) { // stats里面的每一项信息是一个column的所有统计信息
     stats[i].Finalize();
     const string& col_name = col_stats_schema.columns[i * COLUMNS_PER_STAT].columnName;
-    params->column_stats[col_name] = stats[i].ToTColumnStats(); //把计算好的统计信息更新到params中
+    params->column_stats[col_name] =
+        stats[i].ToTColumnStats(); //把计算好的统计信息更新到params中
     VLOG(1) << "setup information for column " << col_name;
     VLOG(3) << "Incremental stats result for column: " << col_name << ": "
             << stats[i].DebugString();
