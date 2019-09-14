@@ -81,24 +81,24 @@ TEST(IncrStatsUtilTest, TestEncode) {
 TEST(IncrStatsUtilTest, TestNumNullAggregation) {
   PerColumnStats* stat = new PerColumnStats();
 
-  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 1);
+  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 1, 0, 0);
   ASSERT_EQ(1, stat->ToTColumnStats().num_nulls);
 
-  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 0);
+  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 0, 0, 0);
   ASSERT_EQ(1, stat->ToTColumnStats().num_nulls);
 
-  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 2);
+  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 2, 0, 0);
   ASSERT_EQ(3, stat->ToTColumnStats().num_nulls);
 
-  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, -1);
+  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, -1, 0, 0);
   ASSERT_EQ(-1, stat->ToTColumnStats().num_nulls);
 
-  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 0);
+  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 0, 0, 0);
   ASSERT_EQ(-1, stat->ToTColumnStats().num_nulls);
 
-  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 3);
+  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, 3, 0, 0);
   ASSERT_EQ(-1, stat->ToTColumnStats().num_nulls);
 
-  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, -1);
+  stat->Update(string(AggregateFunctions::HLL_LEN, 0), 0, 0, 0, -1, 0, 0);
   ASSERT_EQ(-1, stat->ToTColumnStats().num_nulls);
 }
