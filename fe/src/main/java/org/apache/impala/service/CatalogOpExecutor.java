@@ -2445,7 +2445,9 @@ public class CatalogOpExecutor {
         }
       } catch (Exception e) {
         if (e instanceof AlreadyExistsException && if_not_exists) {
-          addSummary(response, "Table already exists");
+          addSummary(response, String.format("Table already exists in metastore. " +
+                  "Please issue 'INVALIDATE <%s.%s>",
+                  newTable.getDbName(), newTable.getTableName()));
           return false;
         }
         throw new ImpalaRuntimeException(
