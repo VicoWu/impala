@@ -57,11 +57,13 @@ class TestComputeStats(ImpalaTestSuite):
   @SkipIfS3.eventually_consistent
   def test_compute_stats_avro(self, vector, unique_database, cluster_properties):
     if cluster_properties.is_catalog_v2_cluster():
+      print "Running test for compute-stats-avro-catalog-v2"
       # IMPALA-7308: changed behaviour of various Avro edge cases significantly in the
       # local catalog - the expected behaviour is different.
       self.run_test_case('QueryTest/compute-stats-avro-catalog-v2', vector,
                          unique_database)
     else:
+      print "Running test for compute-stats-avro"
       self.run_test_case('QueryTest/compute-stats-avro', vector, unique_database)
 
   @SkipIfLocal.hdfs_blocks
